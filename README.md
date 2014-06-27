@@ -3,7 +3,6 @@ PySuffixTree
 
 A python implementation of a suffix tree object using Ukonnen's algorithm 
 and it's optimisations.
--------------------------------------------------------------------------
 
     Creating suffix tree from 'abcabxabc$'
 
@@ -40,7 +39,8 @@ Node 5
 	Edge $ 0 suffix [9:9] connected to None 
 	Edge a 6 suffix [3:9] connected to None abxabc
 
-	
+...
+
 	[NODE 0]-------(ab)---------[NODE 1]----(c)-------[NODE 3]---($)
 
 	  |                             \                    \
