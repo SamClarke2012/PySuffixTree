@@ -31,7 +31,7 @@ class Node(object):
     def __str__(self):
         if self.hasSuffixLink():
             return 'Node ' + str(self.id) + ' S-linked to ' + \
-                str(self.suffix_link)
+                str(self.suffix_link.getDestination())
         else:
             return 'Node ' + str(self.id)
         
@@ -43,7 +43,7 @@ class Node(object):
         
     def getParent(self):
         """
-        Set the parent edge
+        Get the parent edge
         """
         return self.parent_edge
         
@@ -62,7 +62,7 @@ class Node(object):
 
     def getChildren(self):
         """
-        Add a child edge
+        Get child edges (dict)
         """
         return self.child_edges
 
@@ -75,14 +75,14 @@ class Node(object):
 
     def hasSuffixLink(self):
         """
-        Add a suffix link from this node
+        Check this node for a suffix link
         """
         return False if self.suffix_link is None else True
 
 
     def getSuffixLink(self):
         """
-        Add a suffix link from this node
+        Get the suffix link for this node
         """
         return self.suffix_link
         
@@ -126,7 +126,6 @@ class Edge(object):
 
     def getDestination(self):
         """
-
         Get the destination node.
         """
         return self.dest_node
@@ -139,6 +138,9 @@ class Edge(object):
         elif stop is not None: self.stop = stop
 
     def getLength(self):
+        """
+        Get the length of the suffix
+        """
         stop = 0
         if type(self.stop) is SharedCounter:
             stop = self.stop.getVal()
@@ -164,9 +166,11 @@ class SuffixLink(Edge):
     A logical link between common nodes in the tree.
     """
     def __init__(self, destination_node):
+
         self.dest_node = destination_node
     
     def __str__(self):
+
         return str(self.dest_node)
 
     def getDestination(self):
@@ -182,6 +186,7 @@ class SuffixTree(object):
     Makes use of the Ukkonen algorithm and it's optimisations.
     """
     def __init__(self):
+
         self.pos = SharedCounter(-1)
         self.edge_cnt = 0
         self.edges = []
@@ -194,12 +199,12 @@ class SuffixTree(object):
         self.nodes = [self.root]
         self.active_node = self.root
         self.latest_node = self.root
-        self.target = None
+        self.target = ''
 
     def __str__(self):
         """
         Prints the nodes in the tree sequentially along with their edges 
-        (in node:edge lexographic order).
+        (in node:edge order).
         """
         s = ''
         for node in self.nodes:
@@ -219,7 +224,14 @@ class SuffixTree(object):
         """
         Add a new string to the tree.
         """
-        self.target = string
+        self.target += string
+        self.remainder = 0
+        self.active_len = 0
+        self.active_length = 0
+        self.active_edge = None
+        self.active_node = self.root
+        self.latest_node = self.root
+
         for char in string:
             link = False
             self.pos.nextVal()
@@ -246,6 +258,7 @@ class SuffixTree(object):
                             # If there's no edge with this id
                             if char not in node_edges:
                                 # Add one
+                                new_edge = Edge(char, self.pos.getVal(), self.pos)
                                 self.active_node.addChild(new_edge)
                             else:
                                 # else split the existing edge
@@ -316,7 +329,7 @@ class SuffixTree(object):
                 \
                  \--------- pos++
         """
-        print 'Splitting edge', edge
+        #print 'Splitting edge', edge
         node = Node(len(self.nodes))
         if link and self.latest_node is not None:
             suffix_link = SuffixLink(node)
@@ -347,103 +360,6 @@ class SuffixTree(object):
             # active edge changes
             self.active_edge = self.target[pos - self.active_length]
             # active node remains root            
-
-s = SuffixTree()
-coffee = "TACAATAGGTGAACCATCATCCCT$"
-s.addString(coffee)
-#s.addString('abcabxabcd$')
-#s.addString('banana$')
-print s
-
-"""
-Node 0
-
-	Edge $ 0 suffix [9:9] connected to None 
-
-	Edge a 2 suffix [0:2] connected to Node 1 Suffix linked to Node 2 ab
-
-	Edge b 1 suffix [1:2] connected to Node 2 b
-
-	Edge c 1 suffix [2:3] connected to Node 5 c
-
-	Edge x 4 suffix [5:9] connected to None xabc
-
-	
-
-
-
-Node 1 Suffix linked to Node 2
-
-	Edge c 1 suffix [2:3] connected to Node 3 Suffix linked to Node 4 Suffix linked to Node 5 c
-
-	Edge x 4 suffix [5:9] connected to None xabc
-
-
-
-Node 2
-
-	Edge c 1 suffix [2:3] connected to Node 4 Suffix linked to Node 5 c
-
-	Edge x 4 suffix [5:9] connected to None xabc
-
-	
-
-Node 3 Suffix linked to Node 4 Suffix linked to Node 5
-
-	Edge $ 0 suffix [9:9] connected to None 
-
-	Edge a 6 suffix [3:9] connected to None abxabc
-
-
-
-Node 4 Suffix linked to Node 5
-
-	Edge $ 0 suffix [9:9] connected to None 
-
-	Edge a 6 suffix [3:9] connected to None abxabc
-
-
-	
-Node 5
-
-	Edge $ 0 suffix [9:9] connected to None 
-
-	Edge a 6 suffix [3:9] connected to None abxabc
-
-
-
-[NODE 0]-------(ab)---------[NODE 1]----(c)-------[NODE 3]---($)
-
-  |                             \                    \
-
-  |                              \------(x)----X      \------(abxabc)
-
-  |
-
-  -------------(b)----------[NODE 2]----(c)-------[NODE 4]---($)
-
-  |                              \                    \    
-
-  |                               \-----(xabc)-X       \------(abxabc)
-
-  |
-
-  |------------(c)----------[NODE 5]----($)----X
-
-  |                              \                        
-
-  |                               \------(abxabc)
-
-  |
-  |------------(xabc)-------X
-
-  |
-  |
-  |
-
-  |------------($)----------X
-"""
-
 
 
 
