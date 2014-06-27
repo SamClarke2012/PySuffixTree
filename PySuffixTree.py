@@ -1,3 +1,20 @@
+"""
+   Copyright 2014 Sam Clarke
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+   
+"""
+
 class SharedCounter(object):
     """
     A shared counter object (Integer)
@@ -242,18 +259,14 @@ class SuffixTree(object):
             if char not in node_edges:
                 # If we are hanging on to implicit suffixes
                 while self.active_length > 0:
-                    # while there is chars left in the implicit suffixes
-                    # split the active node at this edge
                     self.splitEdge(node_edges[self.active_edge], 
                                 self.active_length, link)
                     # If the node is NOT root
                     if self.active_node is not self.root:
-                        # If the non root active node has a suffix link
                         if self.active_node.hasSuffixLink():
                             # Set the active node to the link destination
                             link = self.active_node.getSuffixLink()
                             self.active_node = link.getDestination()
-                            # cache the edges of the new active node
                             node_edges = self.active_node.getChildren()
                             # If there's no edge with this id
                             if char not in node_edges:
@@ -266,43 +279,38 @@ class SuffixTree(object):
                                             self.active_length, link)
                         # else if the active node doesn't have a suffix link
                         else:
-                            # active node is root
+                            # active node move to root
                             self.active_node = self.root
-                            # add the new char to the root
+                            # add a new edge
                             new_edge = Edge(char, self.pos.getVal(), self.pos)
                             self.active_node.addChild(new_edge)
-                            # cache the edges of the new active node
                             node_edges = self.active_node.getChildren()
-                            # If there's no edge with this id
                             if char not in node_edges:
-                                # Add one
                                 self.active_node.addChild(new_edge)
                             else:
-                                # else split the existing edge
                                 self.splitEdge(node_edges[self.active_edge], 
                                             self.active_length, link)
-                    # This is not the forst node this step, add suffix link
+                    # This is not the first node this step, add suffix link
                     link = True
-                    # decrement remainder
                     self.remainder -= 1
                 # No edge, no implicit suffixes = add edge to active node
                 new_edge = Edge(char, self.pos.getVal(), self.pos)
                 self.active_node.addChild(new_edge)
-            # Active node has this edge already
+            # Active node has this edge
             else:
                 self.active_length += 1
                 if self.active_length == 1 or self.active_edge is None:
                     self.active_edge = char
                 edge = node_edges[self.active_edge]
-                # if we exceed this edges suffix length
+                # if we exceed this edge's suffix length
                 if self.active_length >= edge.getLength():
-                    # move to the edge dest
+                    # move to the edge destination node
                     dest = edge.getDestination()
                     if dest is not None:
                         self.active_node = dest
                         self.active_edge = None
                         self.active_length = 0
-                    # or create one if the edge has no destination node
+                    # or create one if needed
                     else:
                         new_node = Node(len(self.nodes))
                         edge.setDestination(new_node)
@@ -310,7 +318,6 @@ class SuffixTree(object):
                         self.active_node = new_node
                         self.active_edge = None
                         self.active_length = 0
-                # decrement remainder
                 self.remainder += 1
             if debug:
                 print 'Char', char
