@@ -237,95 +237,67 @@ class SuffixTree(object):
                 s += '\n\t'
         return s
 
-    def addString(self, string, debug=False):
-        """
-        Add a new string to the tree.
-        """
-        self.target += string
-        self.remainder = 0
-        self.active_len = 0
-        self.active_length = 0
-        self.active_edge = None
-        self.active_node = self.root
-        self.latest_node = self.root
 
+    def buildTree(self, string, debug=False):
+
+        self.target = string
+        self.remainder = 1
         for char in string:
-            link = False
+            attach_link = False
             self.pos.nextVal()
             # Remainder is one @ each step
-            self.remainder = 1
             node_edges = self.active_node.getChildren()
             # If the active node does not have an edge for this
-            if char not in node_edges:
-                # If we are hanging on to implicit suffixes
-                while self.active_length > 0:
-                    self.splitEdge(node_edges[self.active_edge], 
-                                self.active_length, link)
-                    # If the node is NOT root
-                    if self.active_node is not self.root:
-                        if self.active_node.hasSuffixLink():
-                            # Set the active node to the link destination
-                            link = self.active_node.getSuffixLink()
-                            self.active_node = link.getDestination()
-                            node_edges = self.active_node.getChildren()
-                            # If there's no edge with this id
-                            if char not in node_edges:
-                                # Add one
-                                new_edge = Edge(char, self.pos.getVal(), self.pos)
-                                self.active_node.addChild(new_edge)
-                            else:
-                                # else split the existing edge
-                                self.splitEdge(node_edges[self.active_edge], 
-                                            self.active_length, link)
-                        # else if the active node doesn't have a suffix link
-                        else:
-                            # active node move to root
-                            self.active_node = self.root
-                            # add a new edge
-                            new_edge = Edge(char, self.pos.getVal(), self.pos)
-                            self.active_node.addChild(new_edge)
-                            node_edges = self.active_node.getChildren()
-                            if char not in node_edges:
-                                self.active_node.addChild(new_edge)
-                            else:
-                                self.splitEdge(node_edges[self.active_edge], 
-                                            self.active_length, link)
-                    # This is not the first node this step, add suffix link
-                    link = True
-                    self.remainder -= 1
-                # No edge, no implicit suffixes = add edge to active node
-                new_edge = Edge(char, self.pos.getVal(), self.pos)
-                self.active_node.addChild(new_edge)
-            # Active node has this edge
-            else:
-                self.active_length += 1
-                if self.active_length == 1 or self.active_edge is None:
-                    self.active_edge = char
-                edge = node_edges[self.active_edge]
-                # if we exceed this edge's suffix length
-                if self.active_length >= edge.getLength():
-                    # move to the edge destination node
-                    dest = edge.getDestination()
-                    if dest is not None:
-                        self.active_node = dest
-                        self.active_edge = None
-                        self.active_length = 0
-                    # or create one if needed
-                    else:
-                        new_node = Node(len(self.nodes))
-                        edge.setDestination(new_node)
-                        self.nodes.append(new_node)
-                        self.active_node = new_node
-                        self.active_edge = None
-                        self.active_length = 0
+            if char in node_edges:
+                if debug: print 'Edge exists'
                 self.remainder += 1
+                self.active_length += 1
+                if self.active_edge is None or self.active_length == 1:
+                    self.active_edge = char
+                if self.active_length >= node_edges[char].getLength():
+                        # move to the edge dest
+                        self.moveDown(node_edges[self.active_edge])
+            else:
+                if debug: print 'Edge doesn\'t exist'
+                while self.remainder > 1:
+                    if char == '$': break
+                    if debug: print 'Splitting edge', self.active_edge, self.active_node,'Remainder', self.remainder
+                    node_edges = self.active_node.getChildren()
+                    self.splitEdge(node_edges[self.active_edge], 
+                                            self.active_length, attach_link)
+                    attach_link = True
+                    self.remainder -= 1
+                else:
+                    if debug: print 'Adding edge', char
+                    new_edge = Edge(char, self.pos.getVal(), self.pos)
+                    self.active_node.addChild(new_edge) 
             if debug:
                 print 'Char', char
-                print 'Active node', self.active_node, '\n'
-                print 'Active edge', self.active_edge, '\n'
-                print 'Active length', self.active_length, '\n'
-                print 'Remainder', self.remainder, '\n'
-            
+                print 'Active node', self.active_node
+                print 'Active edge', self.active_edge
+                print 'Active length', self.active_length
+                print 'Remainder', self.remainder
+                print self
+
+
+    def moveDown(self, edge):
+        """
+        Move down to the destination node of the supplied edge.
+        e.g
+
+        move from 'A' to 'B'...
+
+                [A]-------------------[B]
+        """
+        # move to the edge destination node
+        dest = edge.getDestination()
+        if dest is not None:
+            self.active_node = dest
+            self.active_edge = None
+            self.active_length = 0
+        else:
+            pass
+
 
     def splitEdge(self, edge, index, link):
         """
@@ -366,9 +338,11 @@ class SuffixTree(object):
             pos = self.pos.getVal()
             # active edge changes
             self.active_edge = self.target[pos - self.active_length]
-            # active node remains root            
-
-
-
-
-
+            # active node remains root
+        else:
+            if self.active_node.hasSuffixLink():
+                # Set the active node to the link destination
+                link = self.active_node.getSuffixLink()
+                self.active_node = link.getDestination()
+            else:
+                self.active_node = self.root # set active node to root
