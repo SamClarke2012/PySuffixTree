@@ -280,7 +280,7 @@ class SuffixTree(object):
                 print 'Active edge', self.active_edge
                 print 'Active length', self.active_length
                 print 'Remainder', self.remainder
-                print self
+                #print self
 
 
     def moveDown(self, edge):
@@ -314,7 +314,7 @@ class SuffixTree(object):
         """
         #print 'Splitting edge', edge
         node = Node(len(self.nodes))
-        if link:
+        if link and self.latest_node is not None:
             suffix_link = SuffixLink(node)
             self.latest_node.addSuffixLink(suffix_link)
         # copy out existing destination and bounds
@@ -326,7 +326,7 @@ class SuffixTree(object):
         edge.setDestination(node)   
         # Create new edge representing the remains of the old edge
         offcut = Edge(self.target[old_start + index], old_start + index, 
-                    old_bounds[1], old_dest)
+                    self.pos, old_dest)
         # Add the offcut edge as a child of the new node
         node.addChild(offcut) 
         # Create new edge for the current pos
